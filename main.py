@@ -3,7 +3,6 @@ import asyncio
 import json
 import logging
 import os
-import cv2
 from aiohttp import web
 from aiortc import (
     RTCPeerConnection,
@@ -81,8 +80,6 @@ class FaceSwapper(VideoStreamTrack):
     def __init__(self, track):
         super().__init__()
         self.track = track
-        self.face_detector = cv2.CascadeClassifier("./haarcascade_frontalface_alt.xml")
-        self.face = cv2.imread("./wu.png")
 
     async def recv(self):
         timestamp, video_timestamp_base = await self.next_timestamp()
