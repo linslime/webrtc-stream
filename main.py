@@ -3,21 +3,13 @@ import asyncio
 import json
 import logging
 import os
-import platform
-import ssl
-import time
-
 import cv2
 from aiohttp import web
 from aiortc import (
-    MediaStreamTrack,
-    RTCDataChannel,
     RTCPeerConnection,
     RTCSessionDescription,
     VideoStreamTrack,
 )
-from aiortc.contrib.media import MediaPlayer, MediaRelay
-from av import VideoFrame
 
 ROOT = os.path.dirname(__file__)
 
@@ -95,15 +87,6 @@ class FaceSwapper(VideoStreamTrack):
     async def recv(self):
         timestamp, video_timestamp_base = await self.next_timestamp()
         frame = await self.track.recv()
-        frame = frame.to_ndarray(format="bgr24")
-        s = time.time()
-        face_zones = self.face_detector.detectMultiScale(
-            cv2.cvtColor(frame, code=cv2.COLOR_BGR2GRAY)
-        )
-        for x, y, w, h in face_zones:
-            face = cv2.resize(self.face, dsize=(w, h))
-            frame[y : y + h, x : x + w] = face
-        frame = VideoFrame.from_ndarray(frame, format="bgr24")
         frame.pts = timestamp
         frame.time_base = video_timestamp_base
         return frame
