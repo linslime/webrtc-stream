@@ -9,7 +9,8 @@ from aiortc import (
     RTCSessionDescription,
     VideoStreamTrack,
 )
-
+from aiortc.contrib.media import MediaRecorder
+from av import VideoFrame
 ROOT = os.path.dirname(__file__)
 
 
@@ -33,8 +34,28 @@ async def offer(request):
 
     pc = RTCPeerConnection()
     pcs.add(pc)
-
-    await server(pc, offer)
+    
+    @pc.on("connectionstatechange")
+    async def on_connectionstatechange():
+        print("Connection state is %s" % pc.connectionState)
+        if pc.connectionState == "failed":
+            await pc.close()
+            pcs.discard(pc)
+    
+    player = MediaRecorder('./file.mp4')
+    
+    @pc.on("track")
+    def on_track(track):
+        print("======= received track: ", track)
+        if track.kind == "video":
+            t = FaceSwapper(track)
+            player.addTrack(t)
+            pc.addTrack(t)
+    
+    await pc.setRemoteDescription(offer)
+    await player.start()
+    answer = await pc.createAnswer()
+    await pc.setLocalDescription(answer)
 
     return web.Response(
         content_type="application/json",
@@ -45,26 +66,6 @@ async def offer(request):
 
 
 pcs = set()
-
-
-async def server(pc, offer):
-    @pc.on("connectionstatechange")
-    async def on_connectionstatechange():
-        print("Connection state is %s" % pc.connectionState)
-        if pc.connectionState == "failed":
-            await pc.close()
-            pcs.discard(pc)
-
-    @pc.on("track")
-    def on_track(track):
-        print("======= received track: ", track)
-        if track.kind == "video":
-            t = FaceSwapper(track)
-            pc.addTrack(t)
-
-    await pc.setRemoteDescription(offer)
-    answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
 
 
 async def on_shutdown(app):
@@ -84,6 +85,10 @@ class FaceSwapper(VideoStreamTrack):
     async def recv(self):
         timestamp, video_timestamp_base = await self.next_timestamp()
         frame = await self.track.recv()
+        data = frame.to_ndarray(format="bgr24")
+        print(data.shape)
+        print(data)
+        
         frame.pts = timestamp
         frame.time_base = video_timestamp_base
         return frame
