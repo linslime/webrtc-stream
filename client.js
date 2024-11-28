@@ -3,6 +3,8 @@ var localVideo = document.querySelector("video#localVideo");
 var serverVideo = document.querySelector("video#serverVideo");
 var localAudio = document.querySelector("audio#localAudio");
 var serverAudio = document.querySelector("audio#serverAudio");
+localAudio.muted = true;
+localVideo.muted = true;
 navigator.mediaDevices.getUserMedia({
 	video: {
 		height: 360,

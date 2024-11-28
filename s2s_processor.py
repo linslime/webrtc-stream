@@ -49,7 +49,7 @@ class AudioTrack(AudioStreamTrack):
 
 class s2s_processor(AudioStreamTrack):
 	kind = "audio"
-	Volume_Threshold = 500
+	Volume_Threshold = 5000
 	
 	def __init__(self):
 		super().__init__()
@@ -62,29 +62,31 @@ class s2s_processor(AudioStreamTrack):
 	async def start(self):
 		self.__lock.acquire()
 		asyncio.ensure_future(self.__receive_audio())
-		asyncio.ensure_future(self.__sp2sp())
-		asyncio.ensure_future(self.__sp2frame())
+		# asyncio.ensure_future(self.__sp2sp())
+		# asyncio.ensure_future(self.__sp2frame())
 	
 	def addTrack(self, track):
 		self.__track = track
+		time.sleep(2)
 		self.__lock.release()
 	
 	async def __receive_audio(self):
 		state = 0
-		step = -1
+		true_flag = -1
+		false_flag = -1
 		current_audio_recorder = None
 		file_name = None
 		while True:
 			frame = await self.__track.recv()
 			max = np.absolute(frame.to_ndarray()).max()
-			print(state)
-			print(max)
+			print(max, state)
 			if state == 0:
 				if max >= s2s_processor.Volume_Threshold:
 					file_name = './task' + str(time.time()) + '.wav'
 					current_audio_recorder = AudioRecorder(file_name)
 					current_audio_recorder.start()
 					current_audio_recorder.add_frame(frame)
+					true_flag = frame.pts
 					state = 1
 				else:
 					continue
@@ -94,23 +96,33 @@ class s2s_processor(AudioStreamTrack):
 					pass
 				else:
 					state = 2
-					step = frame.pts
+					false_flag = frame.pts
 			elif state == 2:
 				current_audio_recorder.add_frame(frame)
 				if max >= s2s_processor.Volume_Threshold:
 					state = 1
-					step = -1
+					false_flag = -1
 				else:
-					if frame.pts - step > 1000:
-						
-						current_audio_recorder.stop()
-						await self.__task_queue.put(file_name)
-						print(file_name)
+					if frame.pts - false_flag > 10000:
+						if frame.pts - true_flag > 30000:
+							current_audio_recorder.stop()
+							result_file_path = speech_to_speech(file_name)
+							result_audio = MediaPlayer(result_file_path)
+							while True:
+								try:
+									frame = await result_audio.audio.recv()
+								except MediaStreamError:
+									break
+								await self.__frame_queue.put(frame)
+							while True:
+								if self.__frame_queue.qsize() == 1:
+									await self.__frame_queue.get()
+									break
 						state = 0
-						step = -1
+						false_flag = -1
 					else:
 						pass
-				
+		print("haha")
 	async def __sp2sp(self):
 		while True:
 			task_file_path = await self.__task_queue.get()

@@ -10,5 +10,5 @@ def speech_to_text(speech):
 
 
 if __name__ == '__main__':
-	result = speech_to_text("/home/linslime/code/CleanS2S/1718090483_普通话_标准女声.wav", model)
+	result = speech_to_text("/home/linslime/code/CleanS2S/1718090483_普通话_标准女声.wav")
 	print(result)

@@ -2,6 +2,7 @@ from openai import OpenAI
 
 
 def chat(text):
+    print(text)
     result = None
     try:
         client = OpenAI(
@@ -22,6 +23,7 @@ def chat(text):
         result = '不好意思，我不理解你的意思'
         print(f"错误信息：{e}")
         print("请参考文档：https://help.aliyun.com/zh/model-studio/developer-reference/error-code")
+    print(result)
     return result
 
 

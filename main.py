@@ -56,9 +56,9 @@ async def offer(request):
     @pc.on("track")
     def on_track(track):
         print("======= received track: ", track)
-        # if track.kind == "video":
-        #     vedio = VedioSender(track)
-        #     pc.addTrack(vedio)
+        if track.kind == "video":
+            vedio = VedioSender(track)
+            pc.addTrack(vedio)
         if track.kind == "audio":
             processor.addTrack(track)
             pc.addTrack(processor)
