@@ -1,0 +1,1 @@
+from s2s.speech_to_speech import speech_to_speech

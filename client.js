@@ -1,18 +1,23 @@
 var pc = null;
 var localVideo = document.querySelector("video#localVideo");
 var serverVideo = document.querySelector("video#serverVideo");
-
+var localAudio = document.querySelector("audio#localAudio");
+var serverAudio = document.querySelector("audio#serverAudio");
 navigator.mediaDevices.getUserMedia({
 	video: {
 		height: 360,
 		width: 480,
+	},
+	audio:{
+
 	}
 
 }).then(stream => {
 	localVideo.srcObject = stream;
-	localVideo.addEventListener('loadedmetadata', () => {
-		localVideo.play();
-	});
+	// localVideo.addEventListener('loadedmetadata', () => {
+	// 	// localVideo.play();
+	// });
+	localAudio.srcObject = stream;
 });
 
 function negotiate () {
@@ -65,10 +70,15 @@ function start () {
 	localVideo.srcObject.getVideoTracks().forEach(track => {
 		pc.addTrack(track);
 	});
+	localAudio.srcObject.getAudioTracks().forEach(track =>{
+		pc.addTrack(track)
+	})
 	pc.addEventListener('track', function (evt) {
 		console.log("receive server video");
 		if (evt.track.kind == 'video') {
 			serverVideo.srcObject = evt.streams[0];
+		}else if (evt.track.kind == 'audio'){
+			serverAudio.srcObject = evt.streams[0];
 		}
 	});
 
